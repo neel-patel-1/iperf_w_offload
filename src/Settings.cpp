@@ -67,6 +67,8 @@
 #include "Locale.h"
 #include "SocketAddr.h"
 
+#include <openssl/engine.h>
+
 #include "util.h"
 
 #include "gnu_getopt.h"
@@ -354,6 +356,46 @@ static void Setup_TLS(thread_Settings *mExtSettings, int version)
 
     SSL_CTX_set_ecdh_auto(mExtSettings->ssl_ctx, 1);
     EVP_add_cipher(EVP_aes_128_gcm());
+    LoadCertificates(mExtSettings->ssl_ctx, "newreq.pem", "key.pem");
+}
+
+static void Setup_Offload(thread_Settings *mExtSettings, int version)
+{
+    // SSL_library_init();
+    OpenSSL_add_all_algorithms();
+
+    ERR_load_crypto_strings();
+
+    ENGINE_load_dynamic();
+    ENGINE *qatengine = ENGINE_by_id("qatengine");
+
+    if( qatengine == NULL )
+    {
+        printf("Could not Load QAT Engine!\n");
+        exit(1);
+    }
+    printf("QAT Engine successfully loaded\n");
+
+    int init_res = ENGINE_init(qatengine);
+    printf("Engine name: %s init result : %d \n",ENGINE_get_name(qatengine), init_res);
+
+    if ( ENGINE_set_default_ciphers(qatengine) )
+    {
+        printf("qatengine ciphers loaded\n");
+    }
+    else{
+        exit(1);
+    }
+	
+    //
+    SSL_load_error_strings();
+
+
+    SSL_CTX_set_cipher_list(mExtSettings->ssl_ctx, "TLS1_3_RFC_AES_256_GCM_SHA256");
+
+
+    SSL_CTX_set_ecdh_auto(mExtSettings->ssl_ctx, 1);
+    EVP_add_cipher(EVP_aes_256_gcm());
     LoadCertificates(mExtSettings->ssl_ctx, "newreq.pem", "key.pem");
 }
 
@@ -654,7 +696,9 @@ void Settings_Interpret( char option, const char *optarg, thread_Settings *mExtS
             } else if (strcmp(optarg, "v1.3") == 0) {
                 setSSL13( mExtSettings );
                 Setup_TLS( mExtSettings , 13);
-            } else {
+            } else if(strcmp(optarg, "qat") == 0){
+                Setup_Offload( mExtSettings, 0);
+            }else {
                 fprintf( stderr, "Invalid -E option argument (TLS not enabled)\n");
             }
             break;

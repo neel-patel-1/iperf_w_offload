@@ -71,6 +71,7 @@
 #include "List.h"
 #include "util.h"
 
+
 #ifdef WIN32
 #include "service.h"
 #endif 
@@ -120,7 +121,7 @@ void waitUntilQuit( void );
  * waits for all threads to complete
  * ------------------------------------------------------------------- */
 int main( int argc, char **argv ) {
-
+    OpenSSL_add_all_algorithms();
     // Set SIGTERM and SIGINT to call our user interrupt function
     my_signal( SIGTERM, Sig_Interupt );
     my_signal( SIGINT,  Sig_Interupt );
