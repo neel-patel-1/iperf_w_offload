@@ -363,8 +363,8 @@ static void Setup_Offload(thread_Settings *mExtSettings, int version)
 {
     // SSL_library_init();
     OpenSSL_add_all_algorithms();
-
     ERR_load_crypto_strings();
+    SSL_load_error_strings();
 
     ENGINE_load_dynamic();
     ENGINE *qatengine = ENGINE_by_id("qatengine");
@@ -388,9 +388,7 @@ static void Setup_Offload(thread_Settings *mExtSettings, int version)
     }
 	
     //
-    SSL_load_error_strings();
-
-
+	mExtSettings->ssl_ctx = SSL_CTX_new(TLSv1_2_method());
     SSL_CTX_set_cipher_list(mExtSettings->ssl_ctx, "TLS1_3_RFC_AES_256_GCM_SHA256");
 
 
